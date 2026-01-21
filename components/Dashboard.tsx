@@ -2,6 +2,14 @@
 import React, { useMemo } from 'react';
 import { DashboardRow, RunningSession, Plan, DailyTotals } from '../types';
 import { CATEGORY_CONFIG } from '../constants/categories';
+import { 
+  Briefcase, 
+  HeartPulse, 
+  Moon, 
+  ShoppingBag, 
+  Smile, 
+  BookOpen 
+} from 'lucide-react';
 
 interface DashboardProps {
   rows: DashboardRow[];
@@ -15,6 +23,19 @@ interface DashboardProps {
   isLoading: boolean;
   isHistorical?: boolean;
 }
+
+const CategoryIcon: React.FC<{ category: string; className?: string; style?: React.CSSProperties }> = ({ category, className, style }) => {
+  switch (category) {
+    case 'work': return <Briefcase className={className} style={style} />;
+    case 'health': return <HeartPulse className={className} style={style} />;
+    case 'sleep': return <Moon className={className} style={style} />;
+    case 'essentials': return <ShoppingBag className={className} style={style} />;
+    case 'leisure': return <Smile className={className} style={style} />;
+    case 'learning':
+    case 'education': return <BookOpen className={className} style={style} />;
+    default: return <Briefcase className={className} style={style} />;
+  }
+};
 
 const TimerText: React.FC<{ seconds: number; className?: string }> = ({ seconds, className = "" }) => {
   const h = Math.floor(seconds / 3600);
@@ -40,8 +61,8 @@ const ActivityRing: React.FC<{ progress: number; category: string; size?: number
   const color = config.color;
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90 w-full h-full" viewBox={`0 0 ${size} ${size}`}>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="absolute inset-0 transform -rotate-90 w-full h-full" viewBox={`0 0 ${size} ${size}`}>
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -68,6 +89,11 @@ const ActivityRing: React.FC<{ progress: number; category: string; size?: number
           strokeLinecap="round"
         />
       </svg>
+      <CategoryIcon 
+        category={category} 
+        className="w-4 h-4 opacity-40 relative z-10" 
+        style={{ color: active ? 'white' : color }}
+      />
       {active && !historical && (
         <div 
           className="absolute inset-0 rounded-full animate-pulse" 

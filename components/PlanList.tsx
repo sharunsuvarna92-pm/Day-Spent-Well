@@ -2,6 +2,17 @@
 import React, { useState, useMemo } from 'react';
 import { Plan, DayType } from '../types';
 import { supabase } from '../services/supabase';
+import { CATEGORY_CONFIG } from '../constants/categories';
+import { 
+  Briefcase, 
+  HeartPulse, 
+  Moon, 
+  ShoppingBag, 
+  Smile, 
+  BookOpen,
+  Pencil,
+  Trash2
+} from 'lucide-react';
 
 interface PlanListProps {
   plans: Plan[];
@@ -10,12 +21,18 @@ interface PlanListProps {
   onRefresh: () => void;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Work': '#FF375F',
-  'Health': '#32D74B',
-  'Leisure': '#FF9F0A',
-  'Essentials': '#64D2FF',
-  'Education': '#5E5CE6',
+// Added style to the props interface to fix type error on line 111
+const CategoryIcon: React.FC<{ category: string; className?: string; style?: React.CSSProperties }> = ({ category, className, style }) => {
+  switch (category) {
+    case 'work': return <Briefcase className={className} style={style} />;
+    case 'health': return <HeartPulse className={className} style={style} />;
+    case 'sleep': return <Moon className={className} style={style} />;
+    case 'essentials': return <ShoppingBag className={className} style={style} />;
+    case 'leisure': return <Smile className={className} style={style} />;
+    case 'learning':
+    case 'education': return <BookOpen className={className} style={style} />;
+    default: return <Briefcase className={className} style={style} />;
+  }
 };
 
 const PlanList: React.FC<PlanListProps> = ({ plans, onEdit, onAdd, onRefresh }) => {
@@ -81,42 +98,51 @@ const PlanList: React.FC<PlanListProps> = ({ plans, onEdit, onAdd, onRefresh }) 
             No rules set for {activeTab}s.
           </div>
         ) : (
-          filteredPlans.map((plan) => (
-            <div key={plan.id} className="bg-[#12141A]/60 border border-white/[0.04] rounded-[28px] p-6 flex justify-between items-center group transition-all hover:bg-[#181B23] active:scale-[0.99]">
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-1 h-10 rounded-full" 
-                  style={{ backgroundColor: CATEGORY_COLORS[plan.category] || '#FF375F' }} 
-                />
-                <div className="space-y-1">
-                  <p className="font-medium text-lg tracking-tight text-white/90">{plan.activity_name}</p>
-                  <div className="flex gap-3 items-center">
-                    <span className="text-[9px] text-white/40 font-bold uppercase tracking-widest">{plan.category}</span>
-                    <span className="w-1 h-1 bg-white/[0.04] rounded-full" />
-                    <span className="text-xs text-white/60 tabular-nums">{plan.target_minutes}m budget</span>
+          filteredPlans.map((plan) => {
+            const catKey = plan.category === 'education' ? 'learning' : plan.category;
+            const config = CATEGORY_CONFIG[catKey] || CATEGORY_CONFIG.work;
+            
+            return (
+              <div key={plan.id} className="bg-[#12141A]/60 border border-white/[0.04] rounded-[28px] p-5 flex justify-between items-center group transition-all hover:bg-[#181B23] active:scale-[0.99]">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center transition-colors"
+                    style={{ backgroundColor: `${config.color}15` }}
+                  >
+                    <CategoryIcon category={catKey} className="w-5 h-5" style={{ color: config.color }} />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-base tracking-tight text-white/90">{plan.activity_name}</p>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: config.color }}>
+                        {config.label}
+                      </span>
+                      <span className="w-0.5 h-0.5 bg-white/10 rounded-full" />
+                      <span className="text-[10px] text-white/30 font-medium tabular-nums uppercase tracking-widest">
+                        {plan.target_minutes}m budget
+                      </span>
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => onEdit(plan)}
+                    className="p-2 text-white/40 hover:text-white transition-colors"
+                    title="Edit Rule"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => disablePlan(plan.id)}
+                    className="p-2 text-white/40 hover:text-red-400 transition-colors"
+                    title="Remove Rule"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => onEdit(plan)}
-                  className="p-3 text-white/40 hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={() => disablePlan(plan.id)}
-                  className="p-3 text-white/40 hover:text-red-400 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
