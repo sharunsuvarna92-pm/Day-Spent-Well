@@ -4,13 +4,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chronos Daily</title>
+  <title>Day Spent Well</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <style>
-    body { background-color: #0A0A0B; color: rgba(255,255,255,0.92); -webkit-tap-highlight-color: transparent; }
+    body { background-color: #0B0C10; color: rgba(255,255,255,0.92); -webkit-tap-highlight-color: transparent; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Screen reader only utility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
 
     /* Radix Dialog Animations */
     @keyframes overlayShow { from { opacity: 0; } to { opacity: 1; } }
@@ -27,7 +40,7 @@
       backdrop-filter: blur(8px); 
     }
     .DialogContent { 
-      background-color: #111113; 
+      background-color: #12141A; 
       border-top: 1px solid rgba(255,255,255,0.08); 
       border-radius: 32px 32px 0 0; 
       position: fixed; 
@@ -57,13 +70,15 @@
     "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4",
     "@radix-ui/react-dialog": "https://esm.sh/@radix-ui/react-dialog@1.1.2?deps=react@19.0.0,react-dom@19.0.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.454.0?deps=react@19.0.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
-<body class="bg-[#0A0A0B] text-[rgba(255,255,255,0.92)] font-sans antialiased">
+<body class="bg-[#0B0C10] text-[rgba(255,255,255,0.92)] font-sans antialiased">
   <div id="root"></div>
+  <script type="module" src="index.tsx"></script>
 </body>
 </html>
