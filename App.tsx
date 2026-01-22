@@ -34,6 +34,7 @@ const App: React.FC = () => {
   const [dailyTotals, setDailyTotals] = useState<DailyTotals | null>(null);
   
   const [runningSession, setRunningSession] = useState<RunningSession | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<string[]>([]);
   const [baseDaySeconds, setBaseDaySeconds] = useState<number>(0);
   const [liveSessionSeconds, setLiveSessionSeconds] = useState<number>(0);
   
@@ -53,6 +54,20 @@ const App: React.FC = () => {
     setDayType(determineDayType(selectedDate));
   }, [selectedDate, determineDayType]);
 
+  const fetchSessionHistory = useCallback(async (date: string) => {
+    const { data } = await supabase
+      .from('activity_sessions')
+      .select('plan_id')
+      .eq('activity_date', date)
+      .order('start_time', { ascending: false });
+    
+    if (data) {
+      // Create a unique list of plan IDs in order of start_time
+      const uniqueIds = Array.from(new Set(data.map(s => s.plan_id)));
+      setSessionHistory(uniqueIds);
+    }
+  }, []);
+
   useEffect(() => {
     setLiveSessionSeconds(0);
     if (!isHistorical) {
@@ -60,7 +75,10 @@ const App: React.FC = () => {
     } else {
       setRunningSession(null);
     }
-  }, [selectedDate, isHistorical]);
+    if (isAuthenticated) {
+      fetchSessionHistory(selectedDate);
+    }
+  }, [selectedDate, isHistorical, isAuthenticated, fetchSessionHistory]);
 
   const activePlansForDashboard = useMemo(() => {
     return plans.filter(p => p.day_type === dayType);
@@ -132,6 +150,8 @@ const App: React.FC = () => {
         activityName: data.activity_name,
         startTime: data.start_time
       });
+      // Ensure the recovered active session is at the front of history
+      setSessionHistory(prev => [data.plan_id, ...prev.filter(id => id !== data.plan_id)]);
     }
   };
 
@@ -172,6 +192,10 @@ const App: React.FC = () => {
     if (!userProfile || isHistorical) return;
     if (runningSession) await stopSession(runningSession);
     const start = new Date().toISOString();
+    
+    // Update local history order immediately
+    setSessionHistory(prev => [planId, ...prev.filter(id => id !== planId)]);
+
     const { data } = await supabase.from('activity_sessions').insert({
       user_id: userProfile.id,
       plan_id: planId,
@@ -179,6 +203,7 @@ const App: React.FC = () => {
       activity_date: todayStr,
       start_time: start
     }).select().single();
+
     if (data) {
       setRunningSession({ 
         sessionId: data.id, 
@@ -257,7 +282,19 @@ const App: React.FC = () => {
 
       <main className="flex-1 px-6 pt-4 pb-32 overflow-y-auto no-scrollbar">
         {currentScreen === 'dashboard' && (
-          <Dashboard rows={dashboardRows} plans={activePlansForDashboard} totals={dailyTotals} baseDaySeconds={baseDaySeconds} runningSession={runningSession} onStart={startSession} onStop={() => runningSession && stopSession(runningSession)} liveSessionSeconds={liveSessionSeconds} isLoading={isLoading} isHistorical={isHistorical} />
+          <Dashboard 
+            rows={dashboardRows} 
+            plans={activePlansForDashboard} 
+            totals={dailyTotals} 
+            baseDaySeconds={baseDaySeconds} 
+            runningSession={runningSession} 
+            sessionHistory={sessionHistory}
+            onStart={startSession} 
+            onStop={() => runningSession && stopSession(runningSession)} 
+            liveSessionSeconds={liveSessionSeconds} 
+            isLoading={isLoading} 
+            isHistorical={isHistorical} 
+          />
         )}
         {currentScreen === 'plans' && (
           <PlanList plans={plans} onEdit={(p) => { setEditingPlan(p); setCurrentScreen('edit-plan'); }} onAdd={() => { setCurrentScreen('add-plan'); }} onRefresh={fetchData} />

@@ -17,6 +17,7 @@ interface DashboardProps {
   totals: DailyTotals | null;
   baseDaySeconds: number;
   runningSession: RunningSession | null;
+  sessionHistory: string[];
   onStart: (planId: string, name: string) => void;
   onStop: () => void;
   liveSessionSeconds: number;
@@ -105,7 +106,7 @@ const ActivityRing: React.FC<{ progress: number; category: string; size?: number
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-  rows, plans, totals, runningSession, onStart, onStop, liveSessionSeconds, isHistorical 
+  rows, plans, totals, runningSession, sessionHistory, onStart, onStop, liveSessionSeconds, isHistorical 
 }) => {
   const calculateDisplayMinutes = (totalSeconds: number) => Math.floor(totalSeconds / 60);
 
@@ -125,7 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const mainOffset = mainCircumference - (dayProgress * mainCircumference);
 
   const displayRows = useMemo(() => {
-    return plans.map(plan => {
+    const items = plans.map(plan => {
       const sessionData = rows.find(r => r.plan_id === plan.id);
       return {
         plan_id: plan.id,
@@ -135,7 +136,31 @@ const Dashboard: React.FC<DashboardProps> = ({
         baseActivitySeconds: sessionData?.actual_seconds || 0,
       };
     });
-  }, [plans, rows]);
+
+    // Sort by Most Recently Used (MRU)
+    // 1. If currently active, it's always #1.
+    // 2. Otherwise, check its position in the sessionHistory.
+    // 3. Otherwise, maintain original order.
+    return [...items].sort((a, b) => {
+      const aIsActive = !isHistorical && runningSession?.planId === a.plan_id;
+      const bIsActive = !isHistorical && runningSession?.planId === b.plan_id;
+      
+      if (aIsActive) return -1;
+      if (bIsActive) return 1;
+
+      const aHistoryIdx = sessionHistory.indexOf(a.plan_id);
+      const bHistoryIdx = sessionHistory.indexOf(b.plan_id);
+
+      // If both were previously active, the one active most recently (lower index) comes first
+      if (aHistoryIdx !== -1 && bHistoryIdx !== -1) return aHistoryIdx - bHistoryIdx;
+      // If only 'a' was previously active
+      if (aHistoryIdx !== -1) return -1;
+      // If only 'b' was previously active
+      if (bHistoryIdx !== -1) return 1;
+
+      return 0;
+    });
+  }, [plans, rows, runningSession, sessionHistory, isHistorical]);
 
   return (
     <div className="space-y-10 pb-12">
@@ -228,7 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
 
                     <div className="flex items-center gap-4">
-                      {(isActive || (isHistorical && activitySeconds > 0)) && (
+                      {(isActive || (activitySeconds > 0)) && (
                         <TimerText seconds={activitySeconds} className="text-sm font-medium text-white pr-2" />
                       )}
                       
